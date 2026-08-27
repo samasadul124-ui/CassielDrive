@@ -23,6 +23,9 @@ class AuthProvider extends ChangeNotifier {
   List<DriveAccount> get accounts => _authService.accounts;
   String? get error => _error;
 
+  /// True when a Google OAuth Client ID + Secret have been saved in Settings.
+  Future<bool> hasOAuthCredentials() => _authService.hasCredentials();
+
   Future<void> setUsername(String username) async {
     final trimmed = username.trim();
     if (trimmed.isEmpty) {
@@ -67,7 +70,7 @@ class AuthProvider extends ChangeNotifier {
         await _refreshAccountStorage(account.id);
       }
     } else {
-      _error = 'Sign in failed. Please try again.';
+      _error = _authService.lastError ?? 'Sign in failed. Please try again.';
     }
 
     _isLoading = false;
@@ -85,6 +88,8 @@ class AuthProvider extends ChangeNotifier {
     if (success) {
       final latestAccount = _authService.accounts.last;
       await _refreshAccountStorage(latestAccount.id);
+    } else {
+      _error = _authService.lastError ?? 'Failed to add account.';
     }
 
     _isLoading = false;

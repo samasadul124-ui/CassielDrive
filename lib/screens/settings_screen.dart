@@ -561,7 +561,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SnackBar(
           content: Text(success
               ? 'Google account added successfully!'
-              : 'Failed to add account. Make sure:\n• Client ID type is "Desktop app"\n• Your email is added as a test user\n• You completed the consent screen'),
+              : (authProvider.error ??
+                  'Failed to add account. Make sure:\n• Client ID type is "Desktop app"\n• Your email is added as a test user\n• You completed the consent screen')),
           backgroundColor: success ? AppColors.success : AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape:
