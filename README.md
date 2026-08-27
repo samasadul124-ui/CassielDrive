@@ -107,6 +107,17 @@ Issues that used to break this build, and where they are fixed now:
 | `PlatformException(Libsecret error, Failed to unlock the keyring)` crash on launch | no unlocked keyring / Secret Service | `SafeStorage` catches it and falls back to local storage |
 | Segfault right after the window appears | Impeller / GL driver or Wayland | `./scripts/run_linux.sh --x11` or `--software` |
 
+### ✅ Continuous integration (optional)
+
+`ci/github-actions-ci.yml` is a ready-made workflow that runs `flutter analyze`,
+`flutter test` and builds the Linux, web and Android targets on every push.
+Enable it with:
+
+```bash
+mkdir -p .github/workflows && cp ci/github-actions-ci.yml .github/workflows/ci.yml
+git add .github/workflows/ci.yml && git commit -m "Enable CI" && git push
+```
+
 ## 🚀 Vercel Web Deployment
 
 This project is structured for seamless automated deployments. CassielDrive supports **Vercel Integration** out of the box. By pushing your code changes to the main branch, Vercel leverages the included `vercel.json` configuration to automatically trigger `flutter build web` and instantly deploy your latest UI updates worldwide.
