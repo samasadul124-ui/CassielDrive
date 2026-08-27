@@ -28,7 +28,8 @@ class AuthErrors {
       'Check that the People/Userinfo scopes were granted and try again.';
 }
 
-class AuthService {  static final AuthService _instance = AuthService._internal();
+class AuthService {
+  static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
