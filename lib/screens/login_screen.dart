@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cassiel_drive/core/theme/app_theme.dart';
 import 'package:cassiel_drive/core/constants/app_constants.dart';
 import 'package:cassiel_drive/widgets/glass_card.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:cassiel_drive/providers/auth_provider.dart';
 import 'package:cassiel_drive/widgets/themed_logo.dart';
@@ -20,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   final TextEditingController _usernameController = TextEditingController();
-  final _storage = const FlutterSecureStorage();
+  final _storage = SafeStorage();
   bool _isLoading = false;
   String? _error;
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:cassiel_drive/core/theme/app_theme.dart';
 import 'package:cassiel_drive/core/constants/app_constants.dart';
 import 'package:cassiel_drive/widgets/themed_logo.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final SafeStorage _storage = SafeStorage();
   ThemeMode _themeMode = ThemeMode.dark;
   Color _primaryColor = AppColors.cassielBlue;
 
@@ -24,12 +24,23 @@ class ThemeProvider extends ChangeNotifier {
   ];
 
   Future<void> initialize() async {
+    try {
+      await _initialize();
+    } catch (e) {
+      // Never let a storage failure block app start-up.
+      debugPrint('ThemeProvider.initialize failed: $e');
+      notifyListeners();
+    }
+  }
+
+  Future<void> _initialize() async {
     final stored = await _storage.read(key: AppConstants.themeKey);
     _themeMode = stored == 'light' ? ThemeMode.light : ThemeMode.dark;
 
     final storedColorStr = await _storage.read(key: 'primary_color');
     if (storedColorStr != null) {
-      _primaryColor = Color(int.parse(storedColorStr));
+      final parsed = int.tryParse(storedColorStr);
+      if (parsed != null) _primaryColor = Color(parsed);
     }
 
     notifyListeners();

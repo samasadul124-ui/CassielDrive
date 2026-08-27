@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:cassiel_drive/core/constants/app_constants.dart';
 import 'package:cassiel_drive/models/user_model.dart';
 import 'package:cassiel_drive/models/drive_account.dart';
@@ -9,7 +9,7 @@ import 'package:cassiel_drive/services/drive_service.dart';
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final DriveService _driveService = DriveService();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final SafeStorage _storage = SafeStorage();
 
   bool _isLoading = false;
   String? _error;
@@ -22,6 +22,9 @@ class AuthProvider extends ChangeNotifier {
   String get username => _username;
   List<DriveAccount> get accounts => _authService.accounts;
   String? get error => _error;
+
+  /// True when a Google OAuth Client ID + Secret have been saved in Settings.
+  Future<bool> hasOAuthCredentials() => _authService.hasCredentials();
 
   Future<void> setUsername(String username) async {
     final trimmed = username.trim();
@@ -67,7 +70,7 @@ class AuthProvider extends ChangeNotifier {
         await _refreshAccountStorage(account.id);
       }
     } else {
-      _error = 'Sign in failed. Please try again.';
+      _error = _authService.lastError ?? 'Sign in failed. Please try again.';
     }
 
     _isLoading = false;
@@ -85,6 +88,8 @@ class AuthProvider extends ChangeNotifier {
     if (success) {
       final latestAccount = _authService.accounts.last;
       await _refreshAccountStorage(latestAccount.id);
+    } else {
+      _error = _authService.lastError ?? 'Failed to add account.';
     }
 
     _isLoading = false;

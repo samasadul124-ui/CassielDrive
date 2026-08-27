@@ -62,7 +62,7 @@ CassielDrive is fully open-source and ready to compile for any environment. Ensu
 
 ```bash
 # Clone the repository
-git clone https://github.com/cassielxyz/CassielDrive.git
+git clone https://github.com/samasadul124-ui/CassielDrive.git
 cd CassielDrive
 
 # Install Flutter dependencies
@@ -73,6 +73,49 @@ flutter run -d web
 
 # Compile the Android Production APK
 flutter build apk --release
+```
+
+### 🐧 Linux desktop
+
+The `linux/` desktop folder **is committed**, so no `flutter create` step is needed:
+
+```bash
+sudo pacman -S clang cmake ninja pkgconf gtk3 libsecret gnome-keyring   # Arch/EndeavourOS
+# sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-0 gnome-keyring   # Debian/Ubuntu
+
+git clone https://github.com/samasadul124-ui/CassielDrive.git
+cd CassielDrive
+flutter pub get
+flutter build linux --release
+./build/linux/x64/release/bundle/cassiel_drive
+```
+
+Or let the helper script check the toolchain and do it for you:
+
+```bash
+./scripts/setup_linux.sh     # builds the release bundle
+./scripts/run_linux.sh       # launches it (--x11 / --software if your GPU driver misbehaves)
+```
+
+Issues that used to break this build, and where they are fixed now:
+
+| Symptom | Cause | Fixed by |
+|---|---|---|
+| `No Linux desktop project configured` | `linux/` was not in the repo | `linux/` is committed |
+| `Method not found: 'CupertinoPageTransitionsBuilder'` | the builder moved from the Material to the Cupertino library | `app_theme.dart` imports `cupertino.dart` |
+| `json.hpp … [-Werror,-Wdeprecated-literal-operator]` | `flutter_secure_storage_linux` vendors an old nlohmann/json that clang ≥ 19 rejects | `linux/CMakeLists.txt` no longer passes `-Werror` to plugin targets |
+| `PlatformException(Libsecret error, Failed to unlock the keyring)` crash on launch | no unlocked keyring / Secret Service | `SafeStorage` catches it and falls back to local storage |
+| Segfault right after the window appears | Impeller / GL driver or Wayland | `./scripts/run_linux.sh --x11` or `--software` |
+
+### ✅ Continuous integration (optional)
+
+`ci/github-actions-ci.yml` is a ready-made workflow that runs `flutter analyze`,
+`flutter test` and builds the Linux, web and Android targets on every push.
+Enable it with:
+
+```bash
+mkdir -p .github/workflows && cp ci/github-actions-ci.yml .github/workflows/ci.yml
+git add .github/workflows/ci.yml && git commit -m "Enable CI" && git push
 ```
 
 ## 🚀 Vercel Web Deployment

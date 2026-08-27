@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:cassiel_drive/core/constants/app_constants.dart';
 import 'package:cassiel_drive/screens/login_screen.dart';
 import 'package:cassiel_drive/main.dart' show HomeShell;
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(AppConstants.splashDuration);
     if (!mounted) return;
 
-    const storage = FlutterSecureStorage();
+    final storage = SafeStorage();
     final username = await storage.read(key: AppConstants.usernameKey);
     if (!mounted) return;
 

@@ -30,7 +30,6 @@ dependencies:
   pointycastle: ^3.9.1
 
   # UI
-  google_fonts: ^6.2.1
   cached_network_image: ^3.4.1
   percent_indicator: ^4.2.3
   shimmer: ^3.0.0

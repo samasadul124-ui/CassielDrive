@@ -1,30 +1,63 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:cassiel_drive/models/user_model.dart';
 import 'package:cassiel_drive/models/drive_account.dart';
 import 'package:cassiel_drive/core/constants/app_constants.dart';
 
 // Conditional imports for platform-specific code
-import 'auth_service_io.dart' if (dart.library.html) 'auth_service_web.dart'
+import 'auth_service_io.dart'
+    if (dart.library.js_interop) 'auth_service_web.dart'
     as platform_auth;
+
+/// Well known failure reasons for the Google OAuth flow, so the UI can react
+/// to them (e.g. send the user to Settings) instead of failing silently.
+class AuthErrors {
+  static const String missingCredentials =
+      'No Google OAuth Client ID / Secret configured. '
+      'Open Settings and add your credentials first.';
+  static const String oauthFailed =
+      'Google sign-in was cancelled or failed. Make sure:\n'
+      '• Client ID type is "Desktop app" (mobile/desktop) or "Web application" (web)\n'
+      '• Your email is added as a test user\n'
+      '• You completed the consent screen';
+  static const String profileFailed =
+      'Signed in, but could not read your Google profile. '
+      'Check that the People/Userinfo scopes were granted and try again.';
+}
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final SafeStorage _secureStorage = SafeStorage();
   final List<DriveAccount> _accounts = [];
   UserModel? _currentUser;
   String _currentUsername = 'User';
+  String? _lastError;
 
   List<DriveAccount> get accounts => List.unmodifiable(_accounts);
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null && _accounts.isNotEmpty;
   String get currentUsername => _currentUsername;
+
+  /// Human readable reason of the last failed [signIn] / [addAccount] call.
+  String? get lastError => _lastError;
+
+  /// Whether an OAuth client id + secret have been configured in Settings.
+  /// Without them no authentication flow can even be started.
+  Future<bool> hasCredentials() async {
+    final clientId = await _secureStorage.read(key: AppConstants.clientIdKey);
+    final clientSecret =
+        await _secureStorage.read(key: AppConstants.clientSecretKey);
+    return clientId != null &&
+        clientId.trim().isNotEmpty &&
+        clientSecret != null &&
+        clientSecret.trim().isNotEmpty;
+  }
 
   static const _scopes = [
     'email',
@@ -133,6 +166,7 @@ class AuthService {
 
   // ── Sign In / Add Account ─────────────────────────────────────────
   Future<bool> signIn() async {
+    _lastError = null;
     final clientId = await _secureStorage.read(key: AppConstants.clientIdKey);
     final clientSecret =
         await _secureStorage.read(key: AppConstants.clientSecretKey);
@@ -142,14 +176,21 @@ class AuthService {
         clientSecret == null ||
         clientSecret.isEmpty) {
       debugPrint('Client ID or Secret not configured');
+      _lastError = AuthErrors.missingCredentials;
       return false;
     }
 
     final tokens = await _performOAuthFlow(clientId, clientSecret);
-    if (tokens == null) return false;
+    if (tokens == null) {
+      _lastError = AuthErrors.oauthFailed;
+      return false;
+    }
 
     final profile = await _fetchUserProfile(tokens['access_token']!);
-    if (profile == null) return false;
+    if (profile == null) {
+      _lastError = AuthErrors.profileFailed;
+      return false;
+    }
 
     final email = profile['email'] ?? '';
     final name = profile['name'] ?? email;
@@ -199,6 +240,7 @@ class AuthService {
   }
 
   Future<bool> addAccount() async {
+    _lastError = null;
     final clientId = await _secureStorage.read(key: AppConstants.clientIdKey);
     final clientSecret =
         await _secureStorage.read(key: AppConstants.clientSecretKey);
@@ -208,14 +250,21 @@ class AuthService {
         clientSecret == null ||
         clientSecret.isEmpty) {
       debugPrint('Client ID or Secret not configured');
+      _lastError = AuthErrors.missingCredentials;
       return false;
     }
 
     final tokens = await _performOAuthFlow(clientId, clientSecret);
-    if (tokens == null) return false;
+    if (tokens == null) {
+      _lastError = AuthErrors.oauthFailed;
+      return false;
+    }
 
     final profile = await _fetchUserProfile(tokens['access_token']!);
-    if (profile == null) return false;
+    if (profile == null) {
+      _lastError = AuthErrors.profileFailed;
+      return false;
+    }
 
     final email = profile['email'] ?? '';
     final name = profile['name'] ?? email;
@@ -225,6 +274,7 @@ class AuthService {
     // Check duplicate
     if (_accounts.any((a) => a.email == email)) {
       debugPrint('Account $email already added');
+      _lastError = 'The account $email is already connected.';
       return false;
     }
 
