@@ -62,7 +62,7 @@ CassielDrive is fully open-source and ready to compile for any environment. Ensu
 
 ```bash
 # Clone the repository
-git clone https://github.com/cassielxyz/CassielDrive.git
+git clone https://github.com/samasadul124-ui/CassielDrive.git
 cd CassielDrive
 
 # Install Flutter dependencies
@@ -77,31 +77,35 @@ flutter build apk --release
 
 ### 🐧 Linux desktop
 
-The `linux/` platform folder is generated on demand, and a couple of upstream
-plugins need small workarounds on modern toolchains, so use the helper script:
+The `linux/` desktop folder **is committed**, so no `flutter create` step is needed:
 
 ```bash
-./scripts/setup_linux.sh        # flutter create + build workarounds + release build
-./scripts/run_linux.sh          # launches the bundle (add --x11 or --software if needed)
+sudo pacman -S clang cmake ninja pkgconf gtk3 libsecret gnome-keyring   # Arch/EndeavourOS
+# sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-0 gnome-keyring   # Debian/Ubuntu
+
+git clone https://github.com/samasadul124-ui/CassielDrive.git
+cd CassielDrive
+flutter pub get
+flutter build linux --release
+./build/linux/x64/release/bundle/cassiel_drive
 ```
 
-What the script takes care of for you:
+Or let the helper script check the toolchain and do it for you:
 
-| Symptom | Cause | Handled by |
+```bash
+./scripts/setup_linux.sh     # builds the release bundle
+./scripts/run_linux.sh       # launches it (--x11 / --software if your GPU driver misbehaves)
+```
+
+Issues that used to break this build, and where they are fixed now:
+
+| Symptom | Cause | Fixed by |
 |---|---|---|
-| `Method not found: 'CupertinoPageTransitionsBuilder'` | the builder moved from the Material to the Cupertino library | fixed in source (`app_theme.dart` imports `cupertino.dart`) |
-| `json.hpp … error: identifier '_json' preceded by whitespace … [-Werror,-Wdeprecated-literal-operator]` | `flutter_secure_storage_linux` vendors an old nlohmann/json; clang ≥ 19 rejects it | `setup_linux.sh` appends `-Wno-error` / `-Wno-deprecated-literal-operator` to `linux/CMakeLists.txt` and `CXXFLAGS` |
-| `PlatformException(Libsecret error, Failed to unlock the keyring)` then crash on launch | no unlocked gnome-keyring / Secret Service | the app no longer crashes — `SafeStorage` falls back to local storage; `run_linux.sh` also tries to start `gnome-keyring-daemon` |
-| Segfault right after the window opens | Impeller/GL driver or Wayland issue | `./scripts/run_linux.sh --x11` or `--software` |
-
-Optional but recommended for encrypted token storage:
-
-```bash
-# Arch / EndeavourOS
-sudo pacman -S gnome-keyring libsecret
-# Debian / Ubuntu
-sudo apt install gnome-keyring libsecret-1-0
-```
+| `No Linux desktop project configured` | `linux/` was not in the repo | `linux/` is committed |
+| `Method not found: 'CupertinoPageTransitionsBuilder'` | the builder moved from the Material to the Cupertino library | `app_theme.dart` imports `cupertino.dart` |
+| `json.hpp … [-Werror,-Wdeprecated-literal-operator]` | `flutter_secure_storage_linux` vendors an old nlohmann/json that clang ≥ 19 rejects | `linux/CMakeLists.txt` no longer passes `-Werror` to plugin targets |
+| `PlatformException(Libsecret error, Failed to unlock the keyring)` crash on launch | no unlocked keyring / Secret Service | `SafeStorage` catches it and falls back to local storage |
+| Segfault right after the window appears | Impeller / GL driver or Wayland | `./scripts/run_linux.sh --x11` or `--software` |
 
 ## 🚀 Vercel Web Deployment
 
