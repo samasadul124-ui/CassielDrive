@@ -75,6 +75,34 @@ flutter run -d web
 flutter build apk --release
 ```
 
+### 🐧 Linux desktop
+
+The `linux/` platform folder is generated on demand, and a couple of upstream
+plugins need small workarounds on modern toolchains, so use the helper script:
+
+```bash
+./scripts/setup_linux.sh        # flutter create + build workarounds + release build
+./scripts/run_linux.sh          # launches the bundle (add --x11 or --software if needed)
+```
+
+What the script takes care of for you:
+
+| Symptom | Cause | Handled by |
+|---|---|---|
+| `Method not found: 'CupertinoPageTransitionsBuilder'` | the builder moved from the Material to the Cupertino library | fixed in source (`app_theme.dart` imports `cupertino.dart`) |
+| `json.hpp … error: identifier '_json' preceded by whitespace … [-Werror,-Wdeprecated-literal-operator]` | `flutter_secure_storage_linux` vendors an old nlohmann/json; clang ≥ 19 rejects it | `setup_linux.sh` appends `-Wno-error` / `-Wno-deprecated-literal-operator` to `linux/CMakeLists.txt` and `CXXFLAGS` |
+| `PlatformException(Libsecret error, Failed to unlock the keyring)` then crash on launch | no unlocked gnome-keyring / Secret Service | the app no longer crashes — `SafeStorage` falls back to local storage; `run_linux.sh` also tries to start `gnome-keyring-daemon` |
+| Segfault right after the window opens | Impeller/GL driver or Wayland issue | `./scripts/run_linux.sh --x11` or `--software` |
+
+Optional but recommended for encrypted token storage:
+
+```bash
+# Arch / EndeavourOS
+sudo pacman -S gnome-keyring libsecret
+# Debian / Ubuntu
+sudo apt install gnome-keyring libsecret-1-0
+```
+
 ## 🚀 Vercel Web Deployment
 
 This project is structured for seamless automated deployments. CassielDrive supports **Vercel Integration** out of the box. By pushing your code changes to the main branch, Vercel leverages the included `vercel.json` configuration to automatically trigger `flutter build web` and instantly deploy your latest UI updates worldwide.

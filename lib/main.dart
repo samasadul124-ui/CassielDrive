@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cassiel_drive/core/theme/app_theme.dart';
@@ -21,12 +22,20 @@ import 'package:cassiel_drive/screens/settings_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive
-  await Hive.initFlutter();
+  // Initialize Hive. A failure here (read-only home dir, sandbox, etc.) must
+  // never prevent the app from starting — the app degrades to in-memory state.
+  try {
+    await Hive.initFlutter();
+    await Hive.openBox(AppConstants.cacheBox);
+    await Hive.openBox(AppConstants.settingsBox);
+  } catch (e) {
+    debugPrint('Hive initialization failed, continuing without cache: $e');
+  }
 
-  // Open required Hive boxes before app starts
-  await Hive.openBox(AppConstants.cacheBox);
-  await Hive.openBox(AppConstants.settingsBox);
+  // Probe the OS keychain once. On Linux without an unlocked gnome-keyring /
+  // KWallet this used to throw an unhandled PlatformException and crash the
+  // app on first launch; SafeStorage now falls back to local storage instead.
+  await SafeStorage().probe();
 
   // System UI (not applicable on web)
   if (!kIsWeb) {

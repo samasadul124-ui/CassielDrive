@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:cassiel_drive/models/user_model.dart';
 import 'package:cassiel_drive/models/drive_account.dart';
@@ -32,7 +32,7 @@ class AuthService {  static final AuthService _instance = AuthService._internal(
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final SafeStorage _secureStorage = SafeStorage();
   final List<DriveAccount> _accounts = [];
   UserModel? _currentUser;
   String _currentUsername = 'User';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:cassiel_drive/core/constants/app_constants.dart';
 import 'package:cassiel_drive/models/user_model.dart';
 import 'package:cassiel_drive/models/drive_account.dart';
@@ -9,7 +9,7 @@ import 'package:cassiel_drive/services/drive_service.dart';
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final DriveService _driveService = DriveService();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final SafeStorage _storage = SafeStorage();
 
   bool _isLoading = false;
   String? _error;

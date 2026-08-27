@@ -4,14 +4,14 @@ import 'dart:convert';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 
 class EncryptionService {
   static final EncryptionService _instance = EncryptionService._internal();
   factory EncryptionService() => _instance;
   EncryptionService._internal();
 
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final SafeStorage _secureStorage = SafeStorage();
 
   /// Derive a 256-bit key from password using SHA-256
   encrypt.Key _deriveKey(String password) {

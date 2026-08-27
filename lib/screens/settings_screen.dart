@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cassiel_drive/core/storage/safe_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cassiel_drive/core/theme/app_theme.dart';
 import 'package:cassiel_drive/core/constants/app_constants.dart';
@@ -18,7 +18,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _storage = const FlutterSecureStorage();
+  final _storage = SafeStorage();
   final _clientIdController = TextEditingController();
   final _clientSecretController = TextEditingController();
   final _chunkSizeController = TextEditingController();
@@ -126,6 +126,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                   const SizedBox(height: 16),
+                  if (_storage.isUsingFallback)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withAlpha(30),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: AppColors.warning.withAlpha(80)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.lock_open_rounded,
+                                color: AppColors.warning, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'System keyring unavailable — credentials are '
+                                'stored locally without OS encryption. Install '
+                                'and unlock gnome-keyring (or KWallet) for '
+                                'secure storage.',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
