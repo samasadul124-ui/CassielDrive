@@ -48,3 +48,13 @@ app.*.map.json
 /android/build/
 *.bak
 analyzer_output.txt
+
+# GitHub PAT (plain text, user-provided — must never be committed)
+.github_pat.txt
+
+# MOVIE-RAJA GUI build artifacts
+moviera-gui/frontend/node_modules/
+moviera-gui/frontend/dist/
+moviera-gui/**/target/
+moviera-gui/src-tauri/gen/android/app/build/
+/dist/
