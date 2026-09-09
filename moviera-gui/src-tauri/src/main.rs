@@ -64,11 +64,25 @@ fn find_adapter_binary() -> Option<PathBuf> {
             return Some(pb);
         }
     }
-    // 2. next to the app binary (production: bundle it there)
+    // 2. next to the app binary (pkg.tar.zst layout, or co-located builds)
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             for name in ["moviera-adapter", "moviera-adapter.exe"] {
                 let p = dir.join(name);
+                if p.exists() {
+                    return Some(p);
+                }
+            }
+            // 2b. Tauri bundled resources (bin layout varies between AppImage/deb):
+            //     AppImage:  <image>/moviera           + <image>/resources/moviera-adapter
+            //     AppImage:  <image>/usr/bin/moviera   + <image>/resources/moviera-adapter
+            //     .deb:      /usr/bin/moviera          + /usr/share/com.moviera.gui/resources/
+            for p in [
+                dir.join("resources/moviera-adapter"),
+                dir.join("../resources/moviera-adapter"),
+                dir.join("../../resources/moviera-adapter"),
+                dir.join("../share/com.moviera.gui/resources/moviera-adapter"),
+            ] {
                 if p.exists() {
                     return Some(p);
                 }

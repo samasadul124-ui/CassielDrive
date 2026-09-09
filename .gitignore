@@ -54,6 +54,7 @@ analyzer_output.txt
 
 # MOVIE-RAJA GUI build artifacts
 moviera-gui/frontend/node_modules/
+moviera-gui/src-tauri/bin/
 moviera-gui/frontend/dist/
 moviera-gui/**/target/
 moviera-gui/src-tauri/gen/android/app/build/

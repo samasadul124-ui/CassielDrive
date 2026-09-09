@@ -28,6 +28,7 @@
   "bundle": {
     "active": true,
     "targets": ["appimage", "deb"],
+    "resources": ["bin/moviera-adapter"],
     "icon": ["icons/icon.png"],
     "category": "Multimedia",
     "shortDescription": "GUI client for the MovieBox-TUI streaming backend",

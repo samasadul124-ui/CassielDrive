@@ -14,7 +14,8 @@ Pipeline (best effort, each step reports OK/FAIL independently):
   1.  deps          apt: build tools, webkit2gtk-4.1 (Tauri), zstd, JDK 17 (Android)
   2.  rust          rustup stable if missing
   3.  node          Node.js 22 / npm if missing
-  4.  update-repos  refresh vendored upstream repos (GitHub PAT-authenticated)
+  4.  update-repos  keep vendored pins (frontend is project code — never auto-updated;
+                    backend refresh only with MOVIERA_UPDATE_BACKEND=1, PAT-authenticated)
   5.  frontend-deps npm install
   6.  frontend-build vite production bundle
   7.  adapter       cargo build --release (MovieBox-TUI core HTTP adapter)
@@ -237,39 +238,41 @@ def step_node() -> bool:
 
 
 def step_update_repos(pat: str | None) -> bool:
-    step("update vendored upstream repositories (MOVIE-RAJA + MovieBox-TUI)")
+    step("update vendored upstream repositories (MovieBox-TUI backend)")
+    # IMPORTANT: moviera-gui/frontend is PROJECT code — the MOVIE-RAJA UI rewired
+    # to the real MovieBox-TUI API (src/api/*, RemoteImage, BackendState, ...).
+    # It is NEVER auto-replaced by the stock upstream frontend (that would put the
+    # mock-data UI into the build). Only the pure-upstream backend is eligible,
+    # and only when explicitly requested via MOVIERA_UPDATE_BACKEND=1.
+    if not os.environ.get("MOVIERA_UPDATE_BACKEND"):
+        record("update-repos", True,
+               "vendored pins kept — frontend is project code (never auto-updated); "
+               "set MOVIERA_UPDATE_BACKEND=1 to refresh the backend from upstream")
+        return True
     if not pat:
         record("update-repos", True, "skipped — no GitHub PAT (vendored copies stay as-is)")
         return True
-    upstreams = [
-        ("https://github.com/mesamirh/MovieBox-Tui", GUI_ROOT / "backend" / "moviebox-tui"),
-        ("https://github.com/rajaisinlove-a11y/MOVIE-RAJA", None),  # nested frontend
-    ]
-    all_ok = True
-    for url, dest in upstreams:
-        name = url.rstrip("/").split("/")[-1]
-        tmp = Path(f"/tmp/mb-update-{name}")
-        if tmp.exists():
-            shutil.rmtree(tmp, ignore_errors=True)
-        r = sh(f"git clone --depth 1 {url} {tmp}", pat=pat, timeout=900)
-        if not ok(r.returncode):
-            print(f"  clone failed for {name} — keeping vendored copy", flush=True)
-            all_ok = False
-            continue
-        src = tmp
-        if dest is None:
-            nested = tmp / "netflix-style-movie-streaming-frontend"
-            src = nested if nested.exists() else tmp
-            dest = GUI_ROOT / "frontend"
-        if dest.exists():
-            shutil.rmtree(dest, ignore_errors=True)
-        shutil.copytree(src, dest)
-        (dest / "UPSTREAM.md").write_text(f"UPSTREAM: {url}\n")
-        print(f"  updated {dest}", flush=True)
+    url = "https://github.com/mesamirh/MovieBox-Tui"
+    dest = GUI_ROOT / "backend" / "moviebox-tui"
+    tmp = Path("/tmp/mb-update-MovieBox-Tui")
+    if tmp.exists():
         shutil.rmtree(tmp, ignore_errors=True)
-    record("update-repos", all_ok,
-           "upstream repos refreshed with PAT" if all_ok else "some clones failed")
-    return all_ok
+    r = sh(f"git clone --depth 1 {url} {tmp}", pat=pat, timeout=900)
+    if not ok(r.returncode):
+        print("  clone failed — keeping vendored copy", flush=True)
+        shutil.rmtree(tmp, ignore_errors=True)
+        record("update-repos", False, "clone failed — vendored backend kept")
+        return False
+    if dest.exists():
+        shutil.rmtree(dest, ignore_errors=True)
+    shutil.copytree(tmp, dest)
+    (dest / "UPSTREAM.md").write_text(
+        f"UPSTREAM: {url}\n"
+        f"(refreshed {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())})\n")
+    print(f"  updated {dest}", flush=True)
+    shutil.rmtree(tmp, ignore_errors=True)
+    record("update-repos", True, "backend refreshed from upstream")
+    return True
 
 
 def step_frontend_deps() -> bool:
@@ -320,6 +323,17 @@ def step_linux() -> bool:
     if not cli:
         record("linux", False, "@tauri-apps/cli install failed")
         return False
+    # The Tauri bundle embeds the adapter as a resource (bin/moviera-adapter),
+    # so the release adapter binary must exist and be staged into src-tauri/bin/.
+    adapter_bin = GUI_ROOT / "gui-adapter" / "target" / "release" / "moviera-adapter"
+    if not adapter_bin.exists():
+        record("linux", False,
+               "adapter binary not found — run the 'adapter' step before 'linux'")
+        return False
+    bin_stage = GUI_ROOT / "src-tauri" / "bin"
+    bin_stage.mkdir(exist_ok=True)
+    shutil.copy2(adapter_bin, bin_stage / "moviera-adapter")
+    os.chmod(bin_stage / "moviera-adapter", 0o755)
     r = sh(
         f"{ensure_rust_path()} && {cli} build --bundles appimage,deb",
         cwd=GUI_ROOT / "src-tauri",
