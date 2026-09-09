@@ -1,0 +1,23 @@
+# GitHub PAT (plain text, per project workflow) — never commit
+.github_pat.txt
+
+# Node
+**/node_modules/
+
+# Frontend build output
+moviera-gui/frontend/dist/
+
+# Rust build output
+**/target/
+
+# Tauri Android generated build outputs
+moviera-gui/src-tauri/gen/android/app/build/
+
+# Colab / build artifacts
+dist/
+build.log
+build-*.log
+__pycache__/
+
+# Tauri bundle input: staged adapter binary (created by build_colab.py at build time)
+moviera-gui/src-tauri/bin/

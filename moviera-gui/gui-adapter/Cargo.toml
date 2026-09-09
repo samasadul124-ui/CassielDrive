@@ -1,0 +1,24 @@
+[package]
+name = "moviera-adapter"
+version = "0.1.0"
+edition = "2021"
+description = "Thin local HTTP/JSON adapter that exposes the MovieBox-TUI core (moviebox_tui crate) to the MOVIE-RAJA GUI. No provider logic is duplicated here — every capability is delegated to the existing MovieBox-TUI implementation."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/mesamirh/MovieBox-Tui"
+
+[lib]
+name = "moviera_adapter"
+path = "src/lib.rs"
+
+[[bin]]
+name = "moviera-adapter"
+path = "src/main.rs"
+
+[dependencies]
+moviebox-tui = { path = "../backend/moviebox-tui" }
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "net"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tower-http = { version = "0.6", features = ["cors"] }
+log = "0.4"
