@@ -44,6 +44,9 @@ python build_colab.py --steps deps,rust,node,frontend-deps,frontend-build,adapte
 ```
 
 Artifacts land in `src-tauri/target/release/bundle/` (and are copied to `dist/`).
+The `collect` step always produces **`dist/pkg.tar.zst`** — a self-contained
+Linux package (`bin/moviera` + `bin/moviera-adapter` + `bin/run.sh` +
+`web/` fallback UI + licenses). Unpack with `tar --zstd -xf pkg.tar.zst`.
 
 ## Dev loop (hot reload)
 

@@ -27,7 +27,16 @@ In the GUI:
 - Rust + Android targets: `rustup target add aarch64-linux-android`
 - Node.js >= 20
 
-## Build (debug)
+## Build on Google Colab (no local machine needed)
+
+`build_colab.ipynb` / `python build_colab.py --steps android` performs the
+whole toolchain setup in the Colab VM (JDK 17, Android cmdline-tools, SDK
+packages, the NDK version declared by the generated Tauri project, Rust
+`aarch64-linux-android` target) and runs `tauri android build --debug`,
+copying the result to **`dist/moviera-android-debug.apk`** (downloadable
+straight from the notebook). Requires ~8 GB free disk on the VM.
+
+## Build locally (debug)
 
 ```bash
 cd moviera-gui/frontend && npm install

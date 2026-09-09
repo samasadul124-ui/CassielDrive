@@ -148,22 +148,45 @@ same Rust binary. Playback differences vs desktop are documented there
 (WebView inline playback by default; MovieBox-TUI's `AndroidIntent` player for
 the Termux route — desktop mpv assumptions do not apply).
 
-## 9. Google Colab build
+## 9. Google Colab build — get `pkg.tar.zst` + APK directly
+
+Open **`build_colab.ipynb`** (repository root) in Google Colab and run the
+cells: it clones the repo, writes your PAT to `.github_pat.txt` (plain text,
+§10), runs the whole build in the background (immune to Colab's 10-minute
+cell timeout — a watch cell re-runs if it times out), and then downloads the
+artifacts with one cell:
+
+| Downloaded file | What it is |
+| --- | --- |
+| `dist/pkg.tar.zst` | **Linux package**: `bin/moviera` (Tauri app, embedded React UI) + `bin/moviera-adapter` (MovieBox-TUI core) + `bin/run.sh` launcher + `web/` fallback UI + licenses. Unpack: `tar --zstd -xf pkg.tar.zst && ./moviera-gui-linux/bin/run.sh` |
+| `dist/moviera-android-debug.apk` | **Android APK** (installable, debug-signed). Install with `adb install` |
+| `dist/linux-AppImage/`, `dist/linux-deb/` | AppImage / .deb bundles when produced |
+
+Equivalently in a plain cell:
 
 ```python
-# Colab cell:
-!git clone https://github.com/samasadul124-ui/CassielDrive && cd CassielDrive
+!git clone --depth 1 https://github.com/samasadul124-ui/CassielDrive && cd CassielDrive
 !echo "YOUR_GITHUB_PAT_HERE" > .github_pat.txt   # plain text PAT (see §10)
-!python build_colab.py          # everything, best effort
+!nohup python build_colab.py > build.log 2>&1 &
+!tail -f build.log | grep -m1 'BUILD SUMMARY'; tail -n 80 build.log
+!from google.colab import files; files.download('dist/pkg.tar.zst'); files.download('dist/moviera-android-debug.apk')
 ```
 
-`build_colab.py` performs: system deps → rustup → Node → upstream repo update
-(PAT-authenticated) → `npm install` → frontend build → adapter release build →
-Tauri Linux build → Android best-effort → artifact collection into `dist/`
-(`dist/ARTIFACTS.txt` lists what was produced). Each step reports OK/FAIL
-independently, so you always see exactly what was built. A full **signed
-release APK** requires a local Android SDK/keystore — the helper prepares what
-it can and prints the remaining local step.
+`build_colab.py` pipeline: system deps (incl. webkit2gtk-4.1, zstd, JDK 17)
+→ rustup → Node → upstream repo update (PAT-authenticated) → `npm install` →
+frontend build → adapter release build → Tauri Linux build → **Android SDK +
+NDK setup and `tauri android build` (debug APK)** → packages `dist/pkg.tar.zst`
+and copies the APK into `dist/`. Each step reports OK/FAIL independently
+(`dist/ARTIFACTS.txt` lists what was produced).
+
+Notes:
+- The Android step needs ~8 GB free disk on the VM (SDK+NDK+Gradle+Rust
+  target); the helper warns and continues. If it fails, re-run just
+  `--steps android` after freeing space.
+- A **signed release APK** is optional: export
+  `TAURI_ANDROID_SIGNING_KEYSTORE` / `..._KEYSTORE_PASSWORD` /
+  `..._KEY_ALIAS` / `..._KEY_ALIAS_PASSWORD` in a cell, then
+  `!python build_colab.py --steps android --android-release`.
 
 ## 10. GitHub PAT — plain text configuration
 
